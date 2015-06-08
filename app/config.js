@@ -34,12 +34,29 @@ db.knex.schema.hasTable('clicks').then(function(exists) {
     db.knex.schema.createTable('clicks', function (click) {
       click.increments('id').primary();
       click.integer('link_id');
+      click.integer('user_id');
       click.timestamps();
     }).then(function (table) {
       console.log('Created Table', table);
     });
   }
 });
+
+db.knex.schema.hasTable('users').then(function(exists) {
+  if (!exists) {
+    db.knex.schema.createTable('users', function (user) {
+      user.increments('id').primary();
+      user.string('name', 30);
+      user.string('password', 20);
+      user.string('salt', 100);
+      user.timestamps();
+    }).then(function (table) {
+      console.log('Created Table', table);
+    });
+  }
+});
+
+
 
 /************************************************************/
 // Add additional schema definitions below
