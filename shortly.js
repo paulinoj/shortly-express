@@ -55,6 +55,7 @@ function(req, res) {
   var user = new User({name: req.body.username, password: req.body.password});
   user.save().then(function(newUser) {
     Users.add(newUser);
+    console.log(Users.models);
     // TODO: SEND LOGIN TOKEN TO USER
 
     req.session.regenerate(function(){
