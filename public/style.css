@@ -35,6 +35,10 @@ h1 {
   float: right;
 }
 
+#rightFloatList {
+  float: right;
+}
+
 .navigation li a , .logout {
   width: 100px;
   height: 20px;
