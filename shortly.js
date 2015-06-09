@@ -53,11 +53,11 @@ function(req, res) {
 app.post('/signup',
 function(req, res) {
 
-  var name = req.body.username;
+  var username = req.body.username;
   var password = req.body.password;
   var salt = bcrypt.genSaltSync(10);
   var hash = bcrypt.hashSync(password, salt);
-  var user = new User({name: name, password: hash, salt: salt});
+  var user = new User({username: username, password: hash, salt: salt});
 
   user.save().then(function(newUser) {
     Users.add(newUser);
@@ -83,7 +83,7 @@ function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
 
-  var newUser = new User({name: username});
+  var newUser = new User({username: username});
   newUser.fetch().then(function(found) {
     if (found) {
       //SEND TOKEN
