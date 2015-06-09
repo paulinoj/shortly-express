@@ -2,7 +2,8 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
-
+var cookieParser = require('cookie-parser');
+var session = require('express-session');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -11,7 +12,28 @@ var Links = require('./app/collections/links');
 var Link = require('./app/models/link');
 var Click = require('./app/models/click');
 
+
+
+
 var app = express();
+
+app.use(cookieParser('cookie_secret'));
+app.use(session({
+  secret: 'cookie_secret',
+  resave: true,
+  saveUninitialized: true
+}));
+
+
+function restrict(req, res, next) {
+  if (req.session.user) {
+    next();
+  } else {
+    req.session.error = 'Access denied!';
+    res.redirect('/login');
+  }
+}
+
 
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
@@ -21,17 +43,6 @@ app.use(bodyParser.json());
 // Parse forms (signup/login)
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
-
-
-app.get('/',
-function(req, res) {
-  res.render('index');
-});
-
-app.get('/login',
-function(req, res) {
-  res.render('login');
-});
 
 app.get('/signup',
 function(req, res) {
@@ -45,37 +56,62 @@ function(req, res) {
   user.save().then(function(newUser) {
     Users.add(newUser);
     // TODO: SEND LOGIN TOKEN TO USER
-    res.send(200, null);
+
+    req.session.regenerate(function(){
+      req.session.user = req.body.username;
+      res.redirect('/');
+    });
+
+
+//    res.send(200, null);
   });
 });
 
+app.get('/login',
+function(req, res) {
+  res.render('login');
+});
 
 app.post('/login',
 function(req, res) {
   var uri = req.body.url;
-
-  new User({name: req.body.username, password: req.body.password}).fetch().then(function(found) {
+  var username = req.body.username;
+  var password = req.body.password;
+  new User({name: username, password: password}).fetch().then(function(found) {
     if (found) {
       //SEND TOKEN
-      res.send(200, found.attributes);
+
+      req.session.regenerate(function(){
+        req.session.user = username;
+        res.redirect('/');
+      });
+
+//      res.send(200, found.attributes);
     } else {
       res.redirect('/login');
     }
   });
 });
 
+app.get('/logout',
+function(req, res) {
+  req.session.destroy(function() {
+    res.redirect('/login');
+  })
+});
 
-
-
-
-
-
-app.get('/create',
+app.get('/', restrict,
 function(req, res) {
   res.render('index');
 });
 
-app.get('/links',
+
+app.get('/create', restrict,
+function(req, res) {
+  res.render('index');
+});
+
+app.get('/links', restrict,
 function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
