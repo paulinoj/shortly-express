@@ -4,6 +4,7 @@ var partials = require('express-partials');
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
 var session = require('express-session');
+var bcrypt = require('bcrypt-nodejs');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -51,18 +52,20 @@ function(req, res) {
 
 app.post('/signup',
 function(req, res) {
-  console.log("The request body is: ", req.body);
-  var user = new User({name: req.body.username, password: req.body.password});
+  var name = req.body.username;
+  var password = req.body.password;
+  var salt = bcrypt.genSaltSync(10);
+  var hash = bcrypt.hashSync(password, salt);
+  var user = new User({name: name, password: hash, salt: salt});
+
   user.save().then(function(newUser) {
     Users.add(newUser);
-    console.log(Users.models);
     // TODO: SEND LOGIN TOKEN TO USER
 
     req.session.regenerate(function(){
       req.session.user = req.body.username;
       res.redirect('/');
     });
-
 
 //    res.send(200, null);
   });
@@ -78,20 +81,23 @@ function(req, res) {
   var uri = req.body.url;
   var username = req.body.username;
   var password = req.body.password;
-  new User({name: username, password: password}).fetch().then(function(found) {
+
+  var newUser = new User({name: username});
+  newUser.fetch().then(function(found) {
     if (found) {
       //SEND TOKEN
-
-      req.session.regenerate(function(){
-        req.session.user = username;
-        res.redirect('/');
+      bcrypt.hash(password, found.get('salt'), null, function(err, hash) {
+        if (hash === found.get('password')) {
+          req.session.regenerate(function(){
+            req.session.user = username;
+            res.redirect('/');
+          });
+        } else {
+          res.redirect('/login');
+        }
       });
-
-//      res.send(200, found.attributes);
-    } else {
-      res.redirect('/login');
     }
-  });
+  })
 });
 
 app.get('/logout',
