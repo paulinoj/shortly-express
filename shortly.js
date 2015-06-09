@@ -83,7 +83,6 @@ function(req, res) {
         res.redirect('/');
       });
     } else {
-      console.log('THIS SHOULDNT BE HAPPENING', username, password);
       res.redirect('/login');
     }
   });
@@ -110,9 +109,29 @@ function(req, res) {
 app.get('/links', restrict,
 function(req, res) {
   Links.reset().fetch().then(function(links) {
-    res.send(200, links.models);
+
+  var userCollection = new db.Collection();
+  userCollection.model = User;
+
+    db.knex('users_urls').where({user_id: 2}).then(function(data) {
+      links.each(function(linkModel) {
+        for (var i = 0; i < data.length; i++) {
+          if (linkModel.get('id') === data[i].url_id) {
+            userCollection.add(linkModel);
+          }
+        }
+      })
+
+      res.send(200, userCollection.models);
+
+    });
+
   });
+
 });
+
+// select users.username, urls.url from users inner join users_urls on
+// users.id = users_urls.user_id inner join urls on users_urls.url_id = urls.id;
 
 app.post('/links',
 function(req, res) {
@@ -140,6 +159,17 @@ function(req, res) {
         });
 
         link.save().then(function(newLink) {
+
+          var currentUser = new User({username: req.session.user}).fetch()
+          .then(function(returnedUser) {
+            var userId = returnedUser.get('id');
+            var urlId = newLink.get('id');
+
+            db.knex('users_urls').insert({user_id: userId, url_id: urlId}).then(function(data) {
+              console.log(data);
+            });
+          });
+
           Links.add(newLink);
           res.send(200, newLink);
         });

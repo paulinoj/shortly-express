@@ -13,6 +13,7 @@ var db = Bookshelf.initialize({
   }
 });
 
+
 db.knex.schema.hasTable('urls').then(function(exists) {
   if (!exists) {
     db.knex.schema.createTable('urls', function (link) {
@@ -55,6 +56,18 @@ db.knex.schema.hasTable('users').then(function(exists) {
     });
   }
 });
+
+db.knex.schema.hasTable('users_urls').then(function(exists) {
+  if (!exists) {
+    db.knex.schema.createTable('users_urls', function (user_url) {
+      user_url.integer('user_id');
+      user_url.integer('url_id');
+    }).then(function (table) {
+      console.log('Created Table', table);
+    });
+  }
+});
+
 
 
 

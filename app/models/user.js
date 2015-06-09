@@ -11,9 +11,9 @@ var User = db.Model.extend({
   links: function() {
     return this.belongsToMany(Link);
   },
-  clicks: function() {
-    return this.hasMany(Click);
-  },
+  // clicks: function() {
+  //   return this.hasMany(Click);
+  // },
   initialize: function(){
 
   }
