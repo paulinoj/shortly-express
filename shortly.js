@@ -51,11 +51,9 @@ function(req, res) {
 
 app.post('/signup',
 function(req, res) {
-  console.log("The request body is: ", req.body);
-  var user = new User({name: req.body.username, password: req.body.password});
+  var user = new User({username: req.body.username, password: req.body.password});
   user.save().then(function(newUser) {
     Users.add(newUser);
-    console.log(Users.models);
     // TODO: SEND LOGIN TOKEN TO USER
 
     req.session.regenerate(function(){
@@ -78,17 +76,14 @@ function(req, res) {
   var uri = req.body.url;
   var username = req.body.username;
   var password = req.body.password;
-  new User({name: username, password: password}).fetch().then(function(found) {
+  new User({username: username, password: password}).fetch().then(function(found) {
     if (found) {
-      //SEND TOKEN
-
       req.session.regenerate(function(){
         req.session.user = username;
         res.redirect('/');
       });
-
-//      res.send(200, found.attributes);
     } else {
+      console.log('THIS SHOULDNT BE HAPPENING', username, password);
       res.redirect('/login');
     }
   });
@@ -98,7 +93,7 @@ app.get('/logout',
 function(req, res) {
   req.session.destroy(function() {
     res.redirect('/login');
-  })
+  });
 });
 
 app.get('/', restrict,
