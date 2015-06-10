@@ -61,14 +61,7 @@ function(req, res) {
 
   user.save().then(function(newUser) {
     Users.add(newUser);
-    // TODO: SEND LOGIN TOKEN TO USER
-
-    req.session.regenerate(function(){
-      req.session.user = req.body.username;
-      res.redirect('/');
-    });
-
-//    res.send(200, null);
+    util.createSession(req, res, newUser);
   });
 });
 
@@ -86,13 +79,9 @@ function(req, res) {
   var newUser = new User({username: username});
   newUser.fetch().then(function(found) {
     if (found) {
-      //SEND TOKEN
       bcrypt.hash(password, found.get('salt'), null, function(err, hash) {
         if (hash === found.get('password')) {
-          req.session.regenerate(function(){
-            req.session.user = username;
-            res.redirect('/');
-          });
+          util.createSession(req, res, found);
         } else {
           res.redirect('/login');
         }
@@ -121,12 +110,13 @@ function(req, res) {
 
 app.get('/links', restrict,
 function(req, res) {
+
   Links.reset().fetch().then(function(links) {
 
-  var userCollection = new db.Collection();
-  userCollection.model = User;
+    var userCollection = new db.Collection();
+    userCollection.model = User;
 
-    db.knex('users_urls').where({user_id: 2}).then(function(data) {
+    db.knex('users_urls').where({user_id: req.session.user.id}).then(function(data) {
       links.each(function(linkModel) {
         for (var i = 0; i < data.length; i++) {
           if (linkModel.get('id') === data[i].url_id) {
@@ -173,14 +163,19 @@ function(req, res) {
 
         link.save().then(function(newLink) {
 
-          var currentUser = new User({username: req.session.user}).fetch()
-          .then(function(returnedUser) {
-            var userId = returnedUser.get('id');
-            var urlId = newLink.get('id');
+          var userId = req.session.user.id;
+          var urlId = newLink.get('id');
+          db.knex('users_urls').insert({user_id: userId, url_id: urlId}).then(function(data) {
 
-            db.knex('users_urls').insert({user_id: userId, url_id: urlId}).then(function(data) {
-              console.log(data);
-            });
+          // var currentUser = new User({username: req.session.user.get('username')}).fetch()
+          // .then(function(returnedUser) {
+          //   var userId = returnedUser.get('id');
+          //   var urlId = newLink.get('id');
+
+          //   db.knex('users_urls').insert({user_id: userId, url_id: urlId}).then(function(data) {
+          //     console.log(data);
+          //   });
+          // });
           });
 
           Links.add(newLink);
